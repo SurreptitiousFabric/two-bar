@@ -37,6 +37,9 @@ PYTHONPATH=src mise exec -- python -m two_bar.install install --widget local.con
 Installation checks the shortcut, backs up local settings, moves selected widgets,
 adds menu controls, validates Hyprland and restarts the shell. Keep this checkout
 in place: the launcher uses its pinned Python runtime. No Python packages needed.
+Menu extensions may use trailing commas and an `items` object wrapper. Controls
+are inserted into the effective menu object while preserving unrelated text;
+existing work-control keys cause a conflict before configuration writes.
 
 Settings: `~/.config/two-bar/config.json` contains local `start`/`end` times,
 `weekdays` (Monday = 0), `widgets`, and `monitor`. An empty or unavailable monitor
@@ -51,11 +54,17 @@ Uninstall restores moved widgets, removes the owned menu block and shortcut,
 and disables the panel. Backups, disabled plugin files and preferences remain
 under your home directory. Unrelated subsequent settings are preserved; edited
 owned menu/binding blocks require a manual merge.
+Each reinstall after a completed uninstall captures the current widget positions
+and plugin ownership afresh and creates a new private backup without replacing
+earlier backups. Repeated installs within an active lifecycle keep its restoration
+snapshot. Repeating a completed uninstall leaves the configuration untouched.
 
 ## Development
 
 ```bash
 PYTHONPATH=src mise exec -- python -m unittest discover -s tests -v
+# Read-only native menu compatibility check (requires installed Omarchy):
+PYTHONPATH=src mise exec node@26.7.0 -- python tests/native_menu_validation.py
 # Opt-in desktop check: briefly toggles the bar, then follows the schedule.
 mise exec -- python tests/live_smoke.py
 # Additional opt-in desktop validation (use an idle session):

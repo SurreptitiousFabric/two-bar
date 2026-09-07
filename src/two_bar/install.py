@@ -2,13 +2,15 @@
 import argparse
 import json
 from pathlib import Path
-import re
 import shutil
 import subprocess
+import tempfile
 from .control import DEFAULT_CONFIG, atomic_json, validate
+from .menu import insert_menu, jsonc, remove_menu
 
 PLUGIN = "io.github.surreptitiousfabric.two-bar"
 GMAIL = "local.gmail-monitor"
+MENU_KEYS = {"trigger.work", "trigger.work.toggle", "trigger.work.auto"}
 BINDING = '\n-- BEGIN two-bar\no.bind("SUPER + CTRL + SHIFT + W", "Toggle work bar", "two-bar toggle")\n-- END two-bar\n'
 MENU = '''
   // BEGIN two-bar
@@ -19,15 +21,18 @@ MENU = '''
 '''
 
 
-def jsonc(text):
-    # Keep quoted strings intact, including URLs and escaped quotes.
-    clean = re.sub(r'("(?:\\.|[^"\\])*")|//[^\n]*|/\*[\s\S]*?\*/',
-                   lambda match: match[1] or "", text)
-    return json.loads(clean)
-
-
 def widget_id(entry):
     return entry.get("id") if isinstance(entry, dict) else entry
+
+
+def active_installation(record, menu, bindings):
+    if not record:
+        return False
+    # Old releases retained uninstalled=True even after reinstall. Exact owned
+    # blocks distinguish that active installation from a completed uninstall.
+    return not record.get("uninstalled") or bool(
+        record.get("menu_insert") and record["menu_insert"] in menu
+        and record.get("binding") and record["binding"] in bindings)
 
 
 def shell_install(config, record, activate, widget_ids=None):
@@ -101,36 +106,34 @@ def install(project, home, activate=True, add_widgets=()):
     old_menu = menu_path.read_text() if menu_path.exists() else "{}\n"
     old_bindings = bindings_path.read_text()
     record = json.loads(journal.read_text()) if journal.exists() else None
-    if not record:
-        if plugin_dir.exists() or launcher.exists() or launcher.is_symlink():
+    new_lifecycle = not active_installation(record, old_menu, old_bindings)
+    updated_menu = old_menu
+    if new_lifecycle:
+        if not record and (plugin_dir.exists() or launcher.exists() or launcher.is_symlink()):
             raise ValueError("Unmanaged two-bar installation exists; refusing to overwrite")
-        if "trigger.work" in jsonc(old_menu) or "-- BEGIN two-bar" in old_bindings:
-            raise ValueError("Existing work menu or binding conflicts with installation")
-        record = {"added_plugins": [], "gmail": None, "menu_insert": "", "binding": BINDING}
+        if "-- BEGIN two-bar" in old_bindings:
+            raise ValueError("Existing work binding conflicts with installation")
+        record = {"added_plugins": [], "moved": {}, "menu_insert": "", "binding": BINDING}
+    else:
+        updated_menu = remove_menu(old_menu, record["menu_insert"])
+        if record["binding"] not in old_bindings:
+            raise ValueError("Work binding was edited; merge it manually before continuing")
+    updated_menu, record["menu_insert"] = insert_menu(updated_menu, MENU, MENU_KEYS)
+    updated_bindings = old_bindings + BINDING if new_lifecycle else old_bindings
+    updated_shell = shell_install(shell_config, record, activate, widget_ids)
+    record.pop("uninstalled", None)
+    # All menu/binding validation finishes before writes, including backups.
+    if new_lifecycle:
         # Backups remain private and are never included in the public checkout.
         backup = state_dir / "backup"
-        backup.mkdir(parents=True, mode=0o700)
+        if backup.exists():
+            backup = Path(tempfile.mkdtemp(prefix="backup-", dir=state_dir))
+        else:
+            backup.mkdir(parents=True, mode=0o700)
         for source in [shell_path, menu_path, bindings_path]:
             if source.exists():
                 shutil.copy2(source, backup / source.name)
                 (backup / source.name).chmod(0o600)
-    updated_shell = shell_install(shell_config, record, activate, widget_ids)
-    updated_menu = old_menu
-    if record["menu_insert"] and record["menu_insert"] in old_menu:
-        # Upgrade only the exact block owned by this installer.
-        updated_menu = old_menu.replace(record["menu_insert"], "", 1)
-        offset = updated_menu.rfind("}")
-        insert = ("," if jsonc(updated_menu) else "") + MENU
-        updated_menu = updated_menu[:offset] + insert + updated_menu[offset:]
-        jsonc(updated_menu)
-        record["menu_insert"] = insert
-    if "trigger.work" not in jsonc(old_menu):
-        offset = old_menu.rfind("}")
-        insert = ("," if jsonc(old_menu) else "") + MENU
-        updated_menu = old_menu[:offset] + insert + old_menu[offset:]
-        jsonc(updated_menu)  # Validate before any config write.
-        record["menu_insert"] = insert
-    updated_bindings = old_bindings if "-- BEGIN two-bar" in old_bindings else old_bindings + BINDING
     atomic_json(journal, record)
     plugin_dir.mkdir(parents=True, exist_ok=True)
     for source in (project / "plugin").iterdir():
@@ -156,14 +159,13 @@ def uninstall(home):
     shell_path = config_dir / "omarchy/shell.json"
     menu_path = config_dir / "omarchy/extensions/omarchy-menu.jsonc"
     bindings_path = config_dir / "hypr/bindings.lua"
-    menu = menu_path.read_text()
-    bindings = bindings_path.read_text()
-    if record["menu_insert"] and record["menu_insert"] not in menu:
-        raise ValueError("Work menu was edited; merge its removal manually before uninstall")
+    menu = menu_path.read_text() if menu_path.exists() else "{}\n"
+    bindings = bindings_path.read_text() if bindings_path.exists() else ""
+    if not active_installation(record, menu, bindings):
+        return
+    updated_menu = remove_menu(menu, record["menu_insert"])
     if record["binding"] not in bindings:
         raise ValueError("Work binding was edited; merge its removal manually before uninstall")
-    updated_menu = menu.replace(record["menu_insert"], "", 1) if record["menu_insert"] else menu
-    jsonc(updated_menu)
     atomic_json(shell_path, shell_uninstall(json.loads(shell_path.read_text()), record))
     menu_path.write_text(updated_menu)
     bindings_path.write_text(bindings.replace(record["binding"], "", 1))
