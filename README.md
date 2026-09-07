@@ -14,9 +14,11 @@ in the existing top bar. Hide the work panel when the working day is over.
   tooltips/popups and remove the panel's input and reserved-space footprint.
 - Add a connections dashboard plugin in a later milestone.
 
-The initial control mechanism and off-mode background-service policy are pending
-owner confirmation. Hiding UI alone does not imply stopping Gmail polling or
-disabling network connections.
+Work mode follows Monday–Friday, 08:00–18:00 in the machine's local timezone,
+with weekends off. A keyboard shortcut and an Omarchy menu toggle can show or
+hide the panel manually. The proposed override rule is to resume the schedule
+at its next boundary; an explicit “Follow schedule” action resumes it immediately.
+Hiding UI alone does not stop Gmail polling or disable network connections.
 
 ## Implementation direction
 
