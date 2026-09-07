@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+project_dir="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")")"
+export PYTHONPATH="$project_dir/src${PYTHONPATH:+:$PYTHONPATH}"
+exec mise exec --cd "$project_dir" -- python -m two_bar.control "$@"

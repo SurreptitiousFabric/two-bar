@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.surreptitiousfabric.two-bar",
+  "name": "Two Bar",
+  "version": "0.1.0",
+  "author": "SurreptitiousFabric",
+  "description": "A scheduled bottom-left work panel alongside the normal Omarchy bar",
+  "kinds": ["panel"],
+  "keepLoaded": true,
+  "entryPoints": {"panel": "Panel.qml"}
+}

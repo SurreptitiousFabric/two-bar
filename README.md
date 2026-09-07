@@ -1,45 +1,69 @@
 # two-bar
 
-A work-only panel for Omarchy: work items at the bottom left, everyday plugins
-in the existing top bar. Hide the work panel when the working day is over.
+A scheduled bottom-left work panel for Omarchy, alongside the normal top bar.
+**Working first version**, hosting existing Gmail and Connections widgets.
 
-**Status: planning and implementation backlog. No runnable plugin yet.**
+The panel follows the top bar's transparency and uses Omarchy's wallpaper contrast
+helper. It reserves a bottom row so tiled windows stay clear, and releases that
+space when hidden. Only the compact icon area receives pointer input.
 
-## Intended experience
+## Controls
 
-- Keep the normal top bar and its everyday plugins.
-- Show a compact, theme-aware work panel at the bottom left.
-- Move the existing work Gmail widget into the work panel first.
-- Provide independent work-mode visibility. Hiding must also dismiss work
-  tooltips/popups and remove the panel's input and reserved-space footprint.
-- Add a connections dashboard plugin in a later milestone.
+- **Super+Ctrl+Shift+W:** toggle the work bar.
+- **Omarchy menu → Trigger → Work bar:** toggle or Follow schedule. Checkmarks
+  indicate visibility and automatic mode. The briefcase opens this submenu.
+- CLI: `two-bar show`, `hide`, `toggle`, `follow-schedule`, or `status`.
 
-Work mode follows Monday–Friday, 08:00–18:00 in the machine's local timezone,
-with weekends off. A keyboard shortcut and an Omarchy menu toggle can show or
-hide the panel manually. The proposed override rule is to resume the schedule
-at its next boundary; an explicit “Follow schedule” action resumes it immediately.
-Hiding UI alone does not stop Gmail polling or disable network connections.
+Automatic hours: Monday–Friday **08:00–18:00 local time**, weekends off. Manual
+choices last until the next schedule transition. Hiding at 10:00 lasts for that
+workday; showing on Saturday lasts until Monday 08:00, when automatic mode resumes.
+Follow schedule resets immediately. Mail polling and open applications continue
+independently of panel visibility.
 
-## Implementation direction
+## Install
 
-Investigate a user-owned Quickshell panel plugin that reuses registered bar
-widgets. Omarchy currently permits one active full-bar plugin, so a second
-configured stock bar is not available. Validate widget discovery and host
-services before choosing a standalone panel or custom bar host.
+Requires Omarchy's Quickshell shell, Mise, and an existing `local.gmail-monitor`
+user plugin. Connections is optional and must already be installed separately.
+From this checkout:
 
-Do not edit packaged Omarchy files. Keep installation reversible and preserve
-unrelated shell settings. See [design notes](docs/design.md) and the
-[implementation backlog](docs/backlog.md).
+```bash
+mise trust
+mise install
+PYTHONPATH=src mise exec -- python -m two_bar.install install
+# Add the existing Connections widget:
+PYTHONPATH=src mise exec -- python -m two_bar.install install --widget local.connections
+```
 
-## Public repository boundary
+Installation checks the shortcut, backs up local settings, moves selected widgets,
+adds menu controls, validates Hyprland and restarts the shell. Keep this checkout
+in place: the launcher uses its pinned Python runtime. No Python packages needed.
 
-Publish code, generic configuration examples, and documentation only. Gmail
-credentials, cached mail, account identifiers, employer connection details and
-machine-specific configuration stay outside this repository. The existing Gmail
-monitor remains an external dependency; this project does not copy its credentials
-or private implementation.
+Settings: `~/.config/two-bar/config.json` contains local `start`/`end` times,
+`weekdays` (Monday = 0), `widgets`, and `monitor`. An empty or unavailable monitor
+name selects the first available screen. Schedule checks run every five seconds;
+manual controls also request an immediate refresh.
+
+```bash
+PYTHONPATH=src mise exec -- python -m two_bar.install uninstall
+```
+
+Uninstall restores moved widgets, removes the owned menu block and shortcut,
+and disables the panel. Backups, disabled plugin files and preferences remain
+under your home directory. Unrelated subsequent settings are preserved; edited
+owned menu/binding blocks require a manual merge.
 
 ## Development
 
-GitHub CLI is pinned in `.mise.toml`. Run `mise trust`, `mise install`, then use
-`mise exec -- gh ...`. Add other tool pins when implementation requires them.
+```bash
+PYTHONPATH=src mise exec -- python -m unittest discover -s tests -v
+# Opt-in desktop check: briefly toggles the bar, then follows the schedule.
+mise exec -- python tests/live_smoke.py
+```
+
+See [design](docs/design.md), [backlog](docs/backlog.md), and
+[verification and limitations](docs/verification.md). Rich popup widgets beyond
+the tested integrations need compatibility checks before adding them.
+
+This public repository contains generic code and documentation only. Mail,
+credentials, private endpoints and machine configuration stay outside it. Existing
+widget code and backends are dependencies, not copied into this project.

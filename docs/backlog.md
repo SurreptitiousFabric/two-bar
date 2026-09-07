@@ -1,10 +1,12 @@
 # Implementation backlog
 
-First milestone: Gmail work bar (issues 1–5). Later: connections dashboard (issue 6).
+The first version is implemented with Gmail and the existing Connections widget.
 
-- [Validate companion-panel architecture](https://github.com/SurreptitiousFabric/two-bar/issues/1) — [acceptance criteria](issues/01.md)
-- [Implement the bottom-left work panel](https://github.com/SurreptitiousFabric/two-bar/issues/2) — [acceptance criteria](issues/02.md)
-- [Add weekday schedule, keyboard shortcut and Omarchy menu controls](https://github.com/SurreptitiousFabric/two-bar/issues/3) — [acceptance criteria](issues/03.md)
-- [Integrate the existing work Gmail widget first](https://github.com/SurreptitiousFabric/two-bar/issues/4) — [acceptance criteria](issues/04.md)
-- [Add reversible installation and lifecycle checks](https://github.com/SurreptitiousFabric/two-bar/issues/5) — [acceptance criteria](issues/05.md)
-- [Plan and add a connections dashboard plugin](https://github.com/SurreptitiousFabric/two-bar/issues/6) — [acceptance criteria](issues/06.md)
+- [#1 Companion architecture](https://github.com/SurreptitiousFabric/two-bar/issues/1) — implemented
+- [#2 Bottom-left panel](https://github.com/SurreptitiousFabric/two-bar/issues/2) — implemented
+- [#3 Schedule and manual controls](https://github.com/SurreptitiousFabric/two-bar/issues/3) — implemented
+- [#4 Gmail integration](https://github.com/SurreptitiousFabric/two-bar/issues/4) — implemented
+- [#5 Lifecycle validation](https://github.com/SurreptitiousFabric/two-bar/issues/5) — remaining manual checks
+- [#6 Existing Connections integration](https://github.com/SurreptitiousFabric/two-bar/issues/6) — implemented
+
+Versioned acceptance criteria are in [issues/](issues/).
