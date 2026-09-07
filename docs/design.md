@@ -21,7 +21,8 @@ independent dashboard windows and backend polling remain running.
 
 One configured screen, or the first available screen, receives the panel. A
 missing named screen falls back to the first. ScreenMoveRemap handles changes to
-the screen origin. Physical hotplug and fullscreen checks remain follow-up work.
+the screen origin. Fullscreen and origin-change software checks pass; the owner
+has also confirmed physical video-cable unplug/replug behavior.
 
 ## Schedule
 

@@ -108,7 +108,9 @@ Item {
       onStreamFinished: {
         try {
           var next = JSON.parse(text)
-          if (!next.visible) root.dismissWorkUi()
+          // Dismiss work UI on the transition, not on every hidden-state poll:
+          // the user must be able to open Follow schedule while the bar is off.
+          if (!next.visible && root.status.visible) root.dismissWorkUi()
           if (JSON.stringify(root.entries) !== JSON.stringify(next.config.widgets))
             root.entries = next.config.widgets
           if (JSON.stringify(root.status.config) === JSON.stringify(next.config))

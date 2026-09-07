@@ -58,6 +58,10 @@ owned menu/binding blocks require a manual merge.
 PYTHONPATH=src mise exec -- python -m unittest discover -s tests -v
 # Opt-in desktop check: briefly toggles the bar, then follows the schedule.
 mise exec -- python tests/live_smoke.py
+# Additional opt-in desktop validation (use an idle session):
+mise exec -- python tests/synthetic_gmail.py
+PYTHONPATH=src mise exec -- python tests/desktop_validation.py
+PYTHONPATH=src mise exec -- python tests/manual_controls.py
 ```
 
 See [design](docs/design.md), [backlog](docs/backlog.md), and
